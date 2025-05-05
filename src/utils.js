@@ -1,5 +1,25 @@
 const domain = "http://localhost:8080"; // local for now, will change to production later
-
+/**
+ * Login Function - Asynchronous Flow Explanation
+ * ------------------------------------------
+ * 1. fetch() initiates HTTP request & immediately returns a Promise
+ *    - Request happens in background (non-blocking)
+ *    - networkRequestStatus holds this Promise
+ * 
+ * 2. .then() registers a callback function to run LATER when response arrives
+ *    - Callback receives response object when network request completes
+ *    - Processing waits until data is available, without blocking main thread
+ * 
+ * 3. Promise Chain:
+ *    - Response → Status check → Parse JSON → Return data
+ *    - Each step transforms data for next step
+ * 
+ * 4. return statement ensures the Promise chain is accessible to caller:
+ *    - Allows: login().then(data => ...)
+ *    - Without it, caller couldn't access results
+ * 
+ * This is how JS handles async operations without blocking execution!
+ */
 export const login = (credential) => { // talk to backend to get token
     const loginUrl = `${domain}/auth/login`;
     const networkRequestStatus = fetch(loginUrl,
@@ -11,6 +31,7 @@ export const login = (credential) => { // talk to backend to get token
             body: JSON.stringify(credential),
         }
     ); // this is the request status
+    // Return the Promise chain
     return networkRequestStatus.then((response) => { // wait for the fetch request to complete
         if (response.status >= 300) {
             throw Error("Fail to log in");
@@ -213,4 +234,35 @@ export const deleteStay = (stayId) => {
       }
     });
   };
-  
+  /**
+ * LOGIN FUNCTION: PROMISE & PARAMETER FLOW
+ * ========================================
+ * 
+ * 1. FUNCTION CALL
+ *    login({ username: "user", password: "pass" })
+ *    └─> credential parameter receives this object
+ * 
+ * 2. HTTP REQUEST
+ *    fetch(url, { body: JSON.stringify(credential) })
+ *    └─> Creates Promise, request runs in background
+ *    └─> Returns immediately with Promise object
+ * 
+ * 3. CALLBACK REGISTRATION
+ *    networkRequestStatus.then((response) => {...})
+ *    └─> Registers function to run later when request completes
+ *    └─> "response" parameter will be filled automatically by JavaScript
+ * 
+ * 4. ASYNC WAITING PERIOD
+ *    [JavaScript continues running other code]
+ *    [Network request happens in background]
+ * 
+ * 5. CALLBACK EXECUTION (when request completes)
+ *    (response) => {...}  // Now runs with response object
+ *    └─> Receives response = { status, headers, body, ... }
+ *    └─> Process response and return response.json()
+ * 
+ * 6. RESULT HANDLING
+ *    response.json() creates another Promise
+ *    └─> Automatically passed to next .then() in chain
+ *    └─> Available to caller: login().then(data => ...)
+ */
